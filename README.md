@@ -1,68 +1,101 @@
-# Article CMS (FlaskWebProject)
+# Article CMS (Flask Web Project)
 
-This project is a Python web application built using Flask. The user can log in and out and create/edit articles. An article consists of a title, author, and body of text stored in an Azure SQL Server along with an image that is stored in Azure Blob Storage. You will also implement OAuth2 with Sign in with Microsoft using the `msal` library, along with app logging.
+## Overview
 
-## Log In Credentials for FlaskWebProject
+Article CMS is a Flask-based content management system. Authenticated users can create and edit posts that include a title, author, body text, and an optional image. Posts are stored in Azure SQL Database and images are uploaded to Azure Blob Storage. Microsoft identity (MSAL) lets users authenticate with Azure Active Directory, while Flask-Login supports local credentials.
 
-- Username: admin
-- Password: pass
+## Key Features
 
-Or, once the MS Login button is implemented, it will automatically log into the `admin` account.
+- Flask 2.2 web UI with server-side sessions
+- SQLAlchemy models backed by Azure SQL Database
+- Image uploads to Azure Blob Storage using the SDK v12 client
+- Microsoft identity sign-in with MSAL
+- Structured logging for authentication events
 
-## Project Instructions (For Student)
+## Architecture at a Glance
 
-You are expected to do the following to complete this project:
-1. Create a Resource Group in Azure.
-2. Create an SQL Database in Azure that contains a user table, an article table, and data in each table (populated with the scripts provided in the SQL Scripts folder).
-    - Provide a screenshot of the populated tables as detailed further below.
-3. Create a Storage Container in Azure for `images` to be stored in a container.
-    - Provide a screenshot of the storage endpoint URL as detailed further below.
-4. Add functionality to the Sign In With Microsoft button. 
-    - This will require completing TODOs in `views.py` with the `msal` library, along with appropriate registration in Azure Active Directory.
-5. Choose to use either a VM or App Service to deploy the FlaskWebProject to Azure. Complete the analysis template in `WRITEUP.md` (or include in the README) to compare the two options, as well as detail your reasoning behind choosing one or the other. Once you have made your choice, go through with deployment.
-6. Add logging for whether users successfully or unsuccessfully logged in.
-    - This will require completing TODOs in `__init__.py`, as well as adding logging where desired in `views.py`.
-7. To prove that the application in on Azure and working, go to the URL of your deployed app, log in using the credentials in this README, click the Create button, and create an article with the following data:
-	- Title: "Hello World!"
-	- Author: "Jane Doe"
-	- Body: "My name is Jane Doe and this is my first article!"
-	- Upload an image of your choice. Must be either a .png or .jpg.
-   After saving, click back on the article you created and provide a screenshot proving that it was created successfully. Please also make sure the URL is present in the screenshot.
-8. Log into the Azure Portal, go to your Resource Group, and provide a screenshot including all of the resources that were created to complete this project. (see sample screenshot in "example_images" folder)
-9. Take a screenshot of the Redirect URIs entered for your registered app, related to the MS Login button.
-10. Take a screenshot of your logs (can be from the Log stream in Azure) showing logging from an attempt to sign in with an invalid login, as well as a valid login.
+| Component | Purpose |
+| --- | --- |
+| Flask application (`FlaskWebProject/`) | Routes, forms, templates, logging |
+| Azure SQL Database | Persists users and posts |
+| Azure Blob Storage | Stores uploaded images |
+| Azure App Service | Recommended hosting platform (see below) |
 
-## example_images Folder
+## Prerequisites
 
-This folder contains sample screenshots that students are required to submit in order to prove they completed various tasks throughout the project.
+- Python 3.10+
+- Azure subscription with permissions to create SQL, Storage, and App Service resources
+- Azure CLI or access to the Azure Portal
+- GitHub account (for optional CI/CD via GitHub Actions)
 
-1. article-cms-solution.png is a screenshot from running the FlaskWebProject on Azure and prove that the student was able to create a new entry. The Title, Author, and Body fields must be populated to prove that the data is being retrieved from the Azure SQL Database while the image on the right proves that an image was uploaded and pulled from Azure Blob Storage.
-2. azure-portal-resource-group.png is a screenshot from the Azure Portal showing all of the contents of the Resource Group the student needs to create. The resource group must (at least) contain the following:
-	- Storage Account
-	- SQL Server
-	- SQL Database
-	- Resources related to deploying the app
-3. sql-storage-solution.png is a screenshot showing the created tables and one query of data from the initial scripts.
-4. blob-solution.png is a screenshot showing an example of blob endpoints for where images are sent for storage.
-5. uri-redirects-solution.png is a screenshot of the redirect URIs related to Microsoft authentication.
-6. log-solution.png is a screenshot showing one potential form of logging with an "Invalid login attempt" and "admin logged in successfully", taken from the app's Log stream. You can customize your log messages as you see fit for these situations.
+## Local Setup
 
-## Dependencies
+1. Clone the repository: `git clone <repo-url>`
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   ```
+3. Install dependencies: `pip install -r requirements.txt`
+4. Export the configuration values (use `.env` or shell variables). Required keys mirror `Config` in `config.py`:
 
-1. A free Azure account
-2. A GitHub account
-3. Python 3.10
-4. Visual Studio 2019 Community Edition (Free)
-5. The latest Azure CLI (helpful; not required - all actions can be done in the portal)
+   | Variable | Description |
+   | --- | --- |
+   | `SECRET_KEY` | Flask session secret |
+   | `BLOB_ACCOUNT` / `BLOB_STORAGE_KEY` / `BLOB_CONTAINER` | Azure Storage credentials |
+   | `SQL_SERVER`, `SQL_DATABASE`, `SQL_USER_NAME`, `SQL_PASSWORD` | Azure SQL connection info |
+   | `CLIENT_ID`, `CLIENT_SECRET` | Azure AD app registration for MSAL |
 
-All Python dependencies are stored in the requirements.txt file. To install them, using Visual Studio 2019 Community Edition:
-1. In the Solution Explorer, expand "Python Environments"
-2. Right-click on "Python 3.10 (64-bit) (global default)" and select "Install from requirements.txt"
+5. Initialize the database tables by running the scripts in `sql_scripts/` against the target Azure SQL Database.
 
-## Troubleshooting
+## Running the Application Locally
 
-- Mac users may need to install `unixodbc` as well as related drivers as shown below:
-    ```bash
-    brew install unixodbc
-    ```
-- Check [here](https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/install-microsoft-odbc-driver-sql-server-macos?view=sql-server-ver15) to add SQL Server drivers for Mac.
+```bash
+python application.py
+```
+
+The development server listens on `https://localhost:5555/` (self-signed certificate).
+
+### Default Credentials
+
+- Username: `admin`
+- Password: `pass`
+
+After MSAL sign-in is configured, the Microsoft login button signs the user in as `admin` automatically.
+
+## Tests
+
+Run the placeholder tests (extend as needed):
+
+```bash
+pytest
+```
+
+## Deployment to Azure App Service (Recommended)
+
+1. Provision resources:
+   - Azure SQL Database + server with firewall rules for App Service
+   - Azure Storage account with `images` container
+   - Azure App Service (Linux, Python 3.10 runtime)
+2. Configure App Service **Settings → Configuration → Application settings** for the variables listed in the Local Setup section.
+3. Ensure ODBC Driver 17 for SQL Server is available (built into App Service for Linux) and enable managed identity or connection security as required.
+4. Deploy via GitHub Actions using the provided `azure/webapps-deploy@v3` workflow or `az webapp up`. Allow a brief delay between any site restart and the deployment to avoid SCM restarts.
+5. After deployment, browse to the App Service URL, sign in, create a new article, and confirm images load from Blob Storage.
+
+## Logging & Monitoring
+
+- Application logs write to standard output and can be viewed with **App Service → Log Stream**.
+- Add Azure Monitor alerts for HTTP 5xx or CPU thresholds when scaling beyond a single instance.
+
+## Troubleshooting Tips
+
+- Install Microsoft ODBC Driver 17 locally for development (macOS example):
+  ```bash
+  brew install unixodbc msodbcsql17
+  ```
+- If OneDeploy fails due to SCM restarts, wait 30–60 seconds after management operations (restart, configuration changes) before redeploying.
+- Confirm Blob Storage credentials by uploading a test file using Azure Storage Explorer when diagnosing image issues.
+
+## License
+
+© 2025 Mukambika. All rights reserved. This project is licensed for Mukambika’s internal use; redistribution or modification outside the organization requires written permission.
